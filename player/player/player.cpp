@@ -89,30 +89,25 @@ HRGN createRgnFromBitmap(HBITMAP mask) {
 	HRGN Rgn, ResRgn = CreateRectRgn(0, 0, 0, 0);
 	BITMAP bm;
 	GetObject(mask, sizeof(BITMAP), &bm);
-	bpp = bm.bmBitsPixel >> 3;
+	bpp = bm.bmBitsPixel >> 3; // number of bytes required to indicate the color of a pixel
 	BYTE *pBits = new BYTE[bm.bmWidth * bm.bmHeight * bpp];
 
 	int  p = GetBitmapBits(mask, bm.bmWidth * bm.bmHeight * bpp, pBits);
 
-	TransPixel = *(DWORD*)pBits;
+	TransPixel = *(DWORD*)pBits; // color 1 pixel
 
-	TransPixel <<= 32 - bm.bmBitsPixel;
+	TransPixel <<= (32 - bm.bmBitsPixel);
+	// line by line, draw
 	for (i = 0; i < bm.bmHeight; i++){
-		startx = -1;
-		for (j = 0; j < bm.bmWidth; j++){
+		startx = -1;	// start new line
+		for (j = 0; j < bm.bmWidth; j++){ // get pixel
 			pixel = *(DWORD*)(pBits + (i * bm.bmWidth +
 				j) * bpp) << (32 - bm.bmBitsPixel);
-			if (pixel != TransPixel){
-				if (startx<0){
-					startx = j;
-				}
-				else if (j == (bm.bmWidth - 1)){
-					Rgn = CreateRectRgn(startx, i, j, i + 1);
-					CombineRgn(ResRgn, ResRgn, Rgn, RGN_OR);
-					startx = -1;
-				}
+			if ((pixel != TransPixel) && (startx<0)) {
+				startx = j; // start of the displayed line 
 			}
-			else if (startx >= 0){
+			if (((pixel != TransPixel) && (j == (bm.bmWidth - 1))) || // reached the border of the picture
+				((pixel == TransPixel) && (startx >= 0))) {  // reached the end of the displayed line
 				Rgn = CreateRectRgn(startx, i, j, i + 1);
 				CombineRgn(ResRgn, ResRgn, Rgn, RGN_OR);
 				startx = -1;
@@ -123,8 +118,7 @@ HRGN createRgnFromBitmap(HBITMAP mask) {
 	return ResRgn;
 }
 
-void CALLBACK UpdateSpectrum(UINT uTimerID, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2)
-{
+void CALLBACK UpdateEqualizer(UINT uTimerID, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2){
 	HDC dc;
 	int x, y, y1;
 
@@ -266,7 +260,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 				BASS_ChannelPause(streamHandle);
 			}
 			else {
-				SetTimer(hWnd, 25, 25, (TIMERPROC)&UpdateSpectrum);
+				SetTimer(hWnd, 25, 25, (TIMERPROC)&UpdateEqualizer);
 				BASS_ChannelPlay(streamHandle, FALSE);
 				isPlayingNow = true;
 			}
@@ -274,10 +268,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 		}
 		break;
 	case WM_COMMAND:
-		switch (LOWORD(wp))
-		{
+		switch (LOWORD(wp)){
 		case ID_BUTTON_PLAY:
-			SetTimer(hWnd, 25, 25, (TIMERPROC)&UpdateSpectrum);
+			SetTimer(hWnd, 25, 25, (TIMERPROC)&UpdateEqualizer);
 			BASS_ChannelPlay(streamHandle, FALSE);
 			isPlayingNow = true;
 			break;
@@ -285,12 +278,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 			KillTimer(hWnd, 25);
 			BASS_ChannelPause(streamHandle);
 			isPlayingNow = false;
-			break;
-		case ID_BUTTON_PREV:
-			BASS_ChannelSetPosition(streamHandle, BASS_ChannelGetPosition(streamHandle, BASS_POS_BYTE) - 0xf0000, BASS_POS_BYTE);
-			break;
-		case ID_BUTTON_NEXT:
-			BASS_ChannelSetPosition(streamHandle, BASS_ChannelGetPosition(streamHandle, BASS_POS_BYTE) + 0xf0000, BASS_POS_BYTE);
 			break;
 		case ID_BUTTON_EXIT:
 			PostMessage(hWnd, WM_CLOSE, wp, lp);
@@ -320,20 +307,16 @@ LRESULT CALLBACK customButtonProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	{
 	case WM_PAINT:
 		RealGetWindowClass(hWnd, text, maxCustomButtonClassName);
-		if (wcscmp(text, L"play") == 0)
-		{
+		if (wcscmp(text, L"play") == 0){
 			mask = (HBITMAP)LoadImage(NULL, playMaskPath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		}
-		else if (wcscmp(text, L"paus") == 0)
-		{
+		else if (wcscmp(text, L"paus") == 0){
 			mask = (HBITMAP)LoadImage(NULL, pauseMaskPath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		}
-		else if (wcscmp(text, L"clos") == 0)
-		{
+		else if (wcscmp(text, L"clos") == 0){
 			mask = (HBITMAP)LoadImage(NULL, closeMaskPath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		}
 		
-
 		GetObject(mask, sizeof(BITMAP), &bm);
 		hdc = BeginPaint(hWnd, &ps);
 		h = ::CreateCompatibleDC(hdc);

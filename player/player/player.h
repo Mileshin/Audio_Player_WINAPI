@@ -15,7 +15,7 @@
 // equalize
 #define visWidth		116
 #define visHeight		65
-#define visPosLeft		275
+#define visPosLeft		278
 #define visPosTop		465
 #define BANDS 20
 
@@ -24,7 +24,7 @@
 #define regClass(nameClass, classN,LWP){							\
 	nameClass.lpszClassName = classN;								\
 	nameClass.hInstance = hInstance;								\
-	nameClass.lpfnWndProc = LWP;								\
+	nameClass.lpfnWndProc = LWP;									\
 	nameClass.hCursor = LoadCursor(NULL, IDC_ARROW);				\
 	nameClass.hIcon = NULL;											\
 	nameClass.lpszMenuName = NULL;									\
@@ -49,7 +49,7 @@ BITMAP		bi;
 wchar_t		szProgName[] = L"Audio player";
 wchar_t		sound[] = L"../Resources/audio/Bomba.mp3";
 wchar_t		mainMaskPath[] = L"../Resources/bmp/kontrust_mask.bmp";
-wchar_t		mainBmpPath[] = L"../Resources/bmp/kontrust.bmp";
+wchar_t		mainBmpPath[] = L"../Resources/bmp/kontrust2.bmp";
 wchar_t		playMaskPath[] = L"../Resources/bmp/play.bmp";
 wchar_t		pauseMaskPath[] = L"../Resources/bmp/pause.bmp";
 wchar_t		closeMaskPath[] = L"../Resources/bmp/close.bmp";
